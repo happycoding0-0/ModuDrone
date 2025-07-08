@@ -4,32 +4,25 @@ import numpy as np
 import math
 from time import sleep
 from ultralytics import YOLO
-# from RPLCD.i2c import CharLCD  # LCD 라이브러리 주석 처리
 from collections import deque
 
-# --- ⚙️ 설정 (Configuration) ---
+# --- 설정 (Configuration) ---
 MODEL_PATH = 'yolov8s.pt'
 GRID_X, GRID_Y = 4, 3
 
-# --- 🚁 드론 및 카메라 설정 (★★★★★ 중요 ★★★★★) ---
-# ❗️❗️ 이 값을 실제 비행 환경에 맞게 수정해야 정확한 밀도 계산이 가능합니다.
+# --- 드론 및 카메라 설정 (중요) ---
+# 이 값을 실제 비행 환경에 맞게 수정해야 정확한 밀도 계산이 가능합니다.
 DRONE_ALTITUDE_METERS = 20  # 드론의 비행 고도 (미터 단위)
-CAMERA_FOV_DEGREES = 84     # 드론 카메라의 수평 화각 (도 단위, 일반적인 드론은 80~90도)
+CAMERA_FOV_DEGREES = 84     # 드론 카메라의 수평 화각 (도 단위)
 
-# --- 🚦 밀도 기반 위험 기준 (명/㎡) ---
+# --- 밀도 기반 위험 기준 (명/㎡) ---
 DANGER_DENSITY = 6.0   # 1㎡ 당 6명 이상: 위험 (빨간색)
 WARNING_DENSITY = 4.0  # 1㎡ 당 4명 이상: 주의 (주황색)
 
-# --- 📊 HUD 및 기타 설정 ---
+# --- HUD 및 기타 설정 ---
 history = deque(maxlen=100)
 
-# --- 🖥️ 하드웨어 및 모델 초기화 ---
-# # LCD 초기화 코드 전체 주석 처리
-# try:
-#     lcd = CharLCD(i2c_expander='PCF8574', address=0x27, port=1, cols=16, rows=2, charmap='A00', auto_linebreaks=True)
-# except Exception:
-#     lcd = None
-
+# --- 하드웨어 및 모델 초기화 ---
 model = YOLO(MODEL_PATH)
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
@@ -37,13 +30,13 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 if not cap.isOpened():
-    print("❌ 오류: 카메라를 열 수 없습니다.")
+    print("오류: 카메라를 열 수 없습니다.")
     exit()
 
-print("🚀 밀도 기반 실시간 분석 시스템을 시작합니다.")
+print("밀도 기반 실시간 분석 시스템을 시작합니다.")
 sleep(1)
 
-# --- ✨ 메인 루프 (실시간 분석) ---
+# --- 메인 루프 (실시간 분석) ---
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -51,7 +44,8 @@ while True:
 
     H, W, _ = frame.shape
 
-    # 1. (NEW) 실제 면적 계산
+    # 1. 실제 면적 계산
+    # 삼각함수를 이용해 영상의 실제 가로/세로 길이(m)와 면적(㎡)을 계산
     fov_radians = math.radians(CAMERA_FOV_DEGREES)
     view_width_meters = 2 * DRONE_ALTITUDE_METERS * math.tan(fov_radians / 2)
     view_height_meters = view_width_meters * (H / W)
@@ -83,11 +77,11 @@ while True:
                 
                 # 밀도에 따른 색상 결정
                 if density >= DANGER_DENSITY:
-                    color, status_text = (0, 0, 255), "DANGER"  # 위험: 빨강
+                    color = (0, 0, 255)  # 위험: 빨강
                 elif density >= WARNING_DENSITY:
-                    color, status_text = (0, 165, 255), "WARN" # 주의: 주황
+                    color = (0, 165, 255) # 주의: 주황
                 else:
-                    color, status_text = (0, 255, 0), "SAFE"    # 안전: 초록
+                    color = (0, 255, 0)    # 안전: 초록
                 
                 alpha = 0.4
                 overlay = frame.copy()
@@ -105,20 +99,9 @@ while True:
     cv2.putText(frame, f"TOTAL PEOPLE: {total_people}", (15, H - 55), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
     cv2.putText(frame, f"MAX DENSITY: {max_density:.1f} p/m2", (15, H - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
     
-    # # 5. LCD 업데이트 코드 전체 주석 처리
-    # if lcd:
-    #     lcd.clear()
-    #     lcd.write_string(f"People: {total_people} MAX:{max_density:.1f}")
-    #     lcd.cursor_pos = (1, 0)
-    #     status = "DANGER" if max_density >= DANGER_DENSITY else ("WARNING" if max_density >= WARNING_DENSITY else "SAFE")
-    #     lcd.write_string(f"Status: {status}")
-
     cv2.imshow("Real-time Density-based Analysis", frame)
     if cv2.waitKey(1) == 27:
         break
 
 cap.release()
 cv2.destroyAllWindows()
-# # LCD 해제 코드 주석 처리
-# if lcd:
-#     lcd.clear()
