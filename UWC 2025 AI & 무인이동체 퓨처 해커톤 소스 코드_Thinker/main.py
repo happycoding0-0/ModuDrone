@@ -15,7 +15,7 @@ GRID_X, GRID_Y = 4, 3
 DRONE_ALTITUDE_METERS = 20  # 드론의 비행 고도 (미터 단위)
 CAMERA_FOV_DEGREES = 84     # 드론 카메라의 수평 화각 (도 단위)
 
-# --- 밀도 기반 위험 기준 (명/㎡) ---
+# --- 위험 기준 (명/㎡) ---
 DANGER_DENSITY = 5.0   # 1㎡ 당 5명 이상: 위험 (빨간색)
 WARNING_DENSITY = 4.0  # 1㎡ 당 4명 이상: 주의 (주황색)
 
